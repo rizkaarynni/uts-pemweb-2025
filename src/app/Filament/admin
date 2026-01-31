@@ -1,0 +1,109 @@
+/**
+ * ================================
+ * SIMPLE ADMIN API - SINGLE FILE
+ * ================================
+ * Author  : Marizka Aryanni
+ * Purpose : UTS / UAS Pemrograman Web
+ * Stack   : Node.js + Express
+ */
+
+import express from "express";
+import cors from "cors";
+
+const app = express();
+const PORT = 3000;
+
+/* ================================
+   MIDDLEWARE
+================================ */
+app.use(cors());
+app.use(express.json());
+
+/* ================================
+   MOCK DATABASE
+================================ */
+let users = [
+  { id: 1, name: "Admin", email: "admin@mail.com", role: "admin" },
+  { id: 2, name: "User", email: "user@mail.com", role: "user" }
+];
+
+/* ================================
+   AUTH MIDDLEWARE (SIMPLE)
+================================ */
+const authAdmin = (req, res, next) => {
+  const token = req.headers.authorization;
+  if (token !== "admin-token") {
+    return res.status(401).json({
+      status: "error",
+      message: "Unauthorized (admin only)"
+    });
+  }
+  next();
+};
+
+/* ================================
+   ROOT
+================================ */
+app.get("/", (req, res) => {
+  res.json({
+    status: "success",
+    message: "Admin API is running",
+    author: "Marizka Aryanni"
+  });
+});
+
+/* ================================
+   USER API (PUBLIC)
+================================ */
+app.get("/api/users", (req, res) => {
+  res.json({
+    status: "success",
+    total: users.length,
+    data: users
+  });
+});
+
+app.post("/api/users", (req, res) => {
+  const { name, email, role } = req.body;
+
+  const newUser = {
+    id: users.length + 1,
+    name,
+    email,
+    role: role || "user"
+  };
+
+  users.push(newUser);
+
+  res.status(201).json({
+    status: "created",
+    data: newUser
+  });
+});
+
+/* ================================
+   ADMIN API (PROTECTED)
+================================ */
+app.get("/api/admin/users", authAdmin, (req, res) => {
+  res.json({
+    status: "admin-access",
+    data: users
+  });
+});
+
+app.delete("/api/admin/users/:id", authAdmin, (req, res) => {
+  const id = parseInt(req.params.id);
+  users = users.filter(user => user.id !== id);
+
+  res.json({
+    status: "deleted",
+    message: `User with id ${id} deleted`
+  });
+});
+
+/* ================================
+   SERVER
+================================ */
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
